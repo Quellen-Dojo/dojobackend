@@ -24,13 +24,18 @@ const oauth = new discordOauth2();
 mongoose.connect('mongodb+srv://quellen:'+process.env.mongopass+'@cluster0.jxtal.mongodb.net/dojodb?retryWrites=true&w=majority',{useNewUrlParser:true,useUnifiedTopology:true})
 let port = process.env.PORT || 3000;
 
-//BI Player Model
+//Models
 const BIPlayerSchema = new mongoose.Schema({
     discordUsername: String,
     steamID: String
-})
+});
+
+const GiveawayEntrantSchema = new mongoose.Schema({
+    discord: String
+});
 
 const BIPlayer = mongoose.model('BIPlayer',BIPlayerSchema);
+const GiveawayEntrant = mongoose.model('GiveawayEntrant',GiveawayEntrantSchema);
 
 // app.get('/test',(req,res) => {
 //     const {user,id} = req.query;
