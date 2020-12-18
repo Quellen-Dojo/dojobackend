@@ -57,27 +57,6 @@ app.get('/sign',(req,res) => {
         scope: 'connections identify'
     };
 
-    // const inst = axios.create({
-    //     baseURL: 'https://discord.com/api/',
-    //     timeout: 1000,
-    //     headers: {'Content-Type':'application/x-www-form-urlencoded'}
-    // });
-    // inst.post('/oauth2/token',data).then(res => {
-    //     console.log(res.status);
-    // });
-
-    // const config = {
-    //     method:'post',
-    //     url: 'https://discord.com/api/oauth2/token',
-    //     headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-    //     data: data,
-    // }
-
-    // axios.post('https://discord.com/api/oauth2/token',JSON.stringify(data),{headers:{'Content-Type':'application/x-www-form-urlencoded'}}).then(res => {
-    //     console.log(res.status);
-    // }).catch(err => {
-    //     console.log('Error on request from discord...');
-    // });
     let userName = '';
     let id = 0;
     let jsonRes = {
@@ -86,14 +65,13 @@ app.get('/sign',(req,res) => {
         has_steam: false,
         already_exists: false
     }
+
     oauth.tokenRequest(data).then(res1 => {
         jsonRes.got_code = true;
         oauth.getUser(res1.access_token).then(res2 => {
             userName = res2.username+'#'+res2.discriminator;
             jsonRes.has_discord = true;
             oauth.getUserConnections(res1.access_token).then(res3 => {
-                console.log(res3);
-
                 for (const conn of res3) {
                     if (conn.type == 'steam') {
                         id = parseInt(conn.id);
