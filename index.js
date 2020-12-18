@@ -22,6 +22,7 @@ const discordOauth2 = require('discord-oauth2');
 const oauth = new discordOauth2();
 
 mongoose.connect('mongodb+srv://quellen:thedojo123@cluster0.jxtal.mongodb.net/dojodb?retryWrites=true&w=majority',{useNewUrlParser:true,useUnifiedTopology:true})
+let port = process.env.PORT || 3000;
 
 //BI Player Model
 const BIPlayerSchema = new mongoose.Schema({
@@ -132,6 +133,6 @@ app.get('/sign',(req,res) => {
     });
 });
 
-app.listen(3000,() => {
+app.listen(port,() => {
     console.log('App listening');
 });
