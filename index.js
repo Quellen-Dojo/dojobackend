@@ -21,7 +21,7 @@ app.use(cors());
 const discordOauth2 = require('discord-oauth2');
 const oauth = new discordOauth2();
 
-mongoose.connect('mongodb+srv://quellen:thedojo123@cluster0.jxtal.mongodb.net/dojodb?retryWrites=true&w=majority',{useNewUrlParser:true,useUnifiedTopology:true})
+mongoose.connect('mongodb+srv://quellen:'+process.env.mongopass+'@cluster0.jxtal.mongodb.net/dojodb?retryWrites=true&w=majority',{useNewUrlParser:true,useUnifiedTopology:true})
 let port = process.env.PORT || 3000;
 
 //BI Player Model
