@@ -50,10 +50,10 @@ app.get('/sign',(req,res) => {
     //First discord request
     const data = {
         clientId: '753807367484735568',
-        clientSecret: 'qy_njDLXTZPF0F-06_m9zaa1mKQA-9fo',
+        clientSecret: process.env.clientSecret,
         grantType: 'authorization_code',
         code: code,
-        redirectUri: 'http://127.0.0.1:5500/signupnext.html',
+        redirectUri: process.env.redirectUri || 'http://127.0.0.1:5500/signupnext.html',
         scope: 'connections identify'
     };
 
