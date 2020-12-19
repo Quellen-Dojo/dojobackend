@@ -49,6 +49,11 @@ app.get('/five',(req,res) => {
     res.status(500).send();
 });
 
+app.post('/payments',(req,res) => {
+    console.log(req.query);
+    res.status(200).send();
+});
+
 app.get('/sign',(req,res) => {
     const code = req.query['code'];
     console.log(`Sending code ${code} to discord...`);
