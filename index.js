@@ -18,16 +18,14 @@ const express = require('express');
 const app = express();
 const cors = require('cors');
 const bodyParser = require('body-parser');
-app.use(cors());
 const discordOauth2 = require('discord-oauth2');
 const oauth = new discordOauth2();
 const stripe = require('stripe')('sk_test_51Hzr5iDDUm17J8yEQMImwpS2DnG7V77sWoZzTeFM4iCEcTSQxwzMDzBIUk8ZFhKYJoww85AWxRS3BPWCKnW54DFB00OawqqLQ3');
 
+app.use(cors());
+
 mongoose.connect('mongodb+srv://quellen:'+process.env.mongopass+'@cluster0.jxtal.mongodb.net/dojodb?retryWrites=true&w=majority',{useNewUrlParser:true,useUnifiedTopology:true})
 let port = process.env.PORT || 3000;
-
-//Stripe Sessions
-let stripe_sessions = {};
 
 //Models
 const BIPlayerSchema = new mongoose.Schema({
@@ -124,7 +122,7 @@ app.get('/sign',(req,res) => {
     };
 
     let userName = '';
-    let id = 0;
+    let id = '';
     let jsonRes = {
         got_code: false,
         has_discord: false,
@@ -140,14 +138,14 @@ app.get('/sign',(req,res) => {
             oauth.getUserConnections(res1.access_token).then(res3 => {
                 for (const conn of res3) {
                     if (conn.type == 'steam') {
-                        id = parseInt(conn.id);
+                        id = conn.id;
                         jsonRes.has_steam = true;
                         break;
                     }
                 }
 
                 //No Steam connection
-                if (id === 0) {
+                if (id === '') {
                     res.json(jsonRes);
                     return;
                 }
