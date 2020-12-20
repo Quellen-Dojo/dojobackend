@@ -1,5 +1,6 @@
 const firebase = require('firebase/app');
 // require('firebase/firestore'); //I dont think we'll need this atm
+process.env.mongopass = 'thedojo123';
 
 const firebaseConfig = {
     apiKey: "AIzaSyAriMlY99iSs-gG3hHYnU7Kb1ogj3i2THg",
@@ -17,12 +18,17 @@ const mongoose = require('mongoose');
 const express = require('express');
 const app = express();
 const cors = require('cors');
+const bodyParser = require('body-parser');
 app.use(cors());
 const discordOauth2 = require('discord-oauth2');
 const oauth = new discordOauth2();
+const stripe = require('stripe')('sk_test_51Hzr5iDDUm17J8yEQMImwpS2DnG7V77sWoZzTeFM4iCEcTSQxwzMDzBIUk8ZFhKYJoww85AWxRS3BPWCKnW54DFB00OawqqLQ3');
 
 mongoose.connect('mongodb+srv://quellen:'+process.env.mongopass+'@cluster0.jxtal.mongodb.net/dojodb?retryWrites=true&w=majority',{useNewUrlParser:true,useUnifiedTopology:true})
 let port = process.env.PORT || 3000;
+
+//Stripe Sessions
+let stripe_sessions = {};
 
 //Models
 const BIPlayerSchema = new mongoose.Schema({
@@ -34,8 +40,14 @@ const GiveawayEntrantSchema = new mongoose.Schema({
     discord: String
 });
 
+const VIPCustomerSchema = new mongoose.Schema({
+    vipsteamID: String,
+    purchasedate: Date
+});
+
 const BIPlayer = mongoose.model('BIPlayer',BIPlayerSchema);
 const GiveawayEntrant = mongoose.model('GiveawayEntrant',GiveawayEntrantSchema);
+const VIPCustomer = mongoose.model('VIPCustomer',VIPCustomerSchema);
 
 // app.get('/test',(req,res) => {
 //     const {user,id} = req.query;
@@ -46,12 +58,45 @@ const GiveawayEntrant = mongoose.model('GiveawayEntrant',GiveawayEntrantSchema);
 // });
 
 app.get('/five',(req,res) => {
-    res.status(500).send();
+    res.status(500).end();
 });
 
+app.use('/buyvip',bodyParser.json());
+app.post('/buyvip',async (req,res) => {
+    let resp = {exists:false,sessionid:''}
+    let steamid = req.body['steamid'];
+    if (!steamid) { res.status(500).send() }
+    VIPCustomer.findOne({vipsteamID:steamid},(e,d) => {
+        if (d !== null) {
+            resp.exists = true;
+            res.json(resp).end();
+            return; //Is this neccessary?
+        }
+    });
+
+    
+    //Continue if doesn't already exist
+    const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        mode: 'payment',
+        cancel_url: 'https://epic-elion-b92a4f.netlify.app/store.html',
+        success_url: 'https://epic-elion-b92a4f.netlify.app/sitemessage.html?size=3&color=ff0000&msg=Thank%20you%20for%20your%20purchase!',
+        line_items: [
+            {price:'price_1HzrNCDDUm17J8yEXQ1wyZEf',quantity:1}
+        ]
+    })
+
+    resp.sessionid = session.id;
+    console.log('New session: '+ session.id);
+    stripe_sessions[resp.sessionid] = steamid;
+    // res.cookie('steamID',steamid); //Might need this?
+    res.json(resp);
+});
+
+app.use('/payments',bodyParser.json());
 app.post('/payments',(req,res) => {
-    console.log(req.params);
-    res.status(200).send();
+    console.log(req.body);
+    res.status(200).end();
 });
 
 app.get('/sign',(req,res) => {
