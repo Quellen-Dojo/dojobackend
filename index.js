@@ -65,37 +65,49 @@ app.use('/buyvip',bodyParser.json());
 app.post('/buyvip',async (req,res) => {
     let resp = {exists:false,sessionid:''}
     let steamid = req.body['steamid'];
-    if (!steamid) { res.status(500).send() }
-    VIPCustomer.findOne({vipsteamID:steamid},(e,d) => {
+    if (!steamid) { res.status(500).send(); return; }
+    await VIPCustomer.findOne({vipsteamID:steamid},(e,d) => {
         if (d !== null) {
             resp.exists = true;
-            res.json(resp).end();
-            return; //Is this neccessary?
+            res.json(resp).send();
         }
     });
 
-    
-    //Continue if doesn't already exist
-    const session = await stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
-        mode: 'payment',
-        cancel_url: 'https://epic-elion-b92a4f.netlify.app/store.html',
-        success_url: 'https://epic-elion-b92a4f.netlify.app/sitemessage.html?size=3&color=ff0000&msg=Thank%20you%20for%20your%20purchase!',
-        line_items: [
-            {price:'price_1HzrNCDDUm17J8yEXQ1wyZEf',quantity:1}
-        ]
-    })
+    if (!resp.exists) {
+        //Continue if doesn't already exist
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            mode: 'payment',
+            cancel_url: 'https://epic-elion-b92a4f.netlify.app/store.html',
+            success_url: 'https://epic-elion-b92a4f.netlify.app/sitemessage.html?size=3&color=ffffff&msg=Thank%20you%20for%20your%20purchase!',
+            line_items: [
+                {price:'price_1HzrNCDDUm17J8yEXQ1wyZEf',quantity:1}
+            ],
+            payment_intent_data: {
+                metadata: {steamID:steamid}
+            }
+        })
 
-    resp.sessionid = session.id;
-    console.log('New session: '+ session.id);
-    stripe_sessions[resp.sessionid] = steamid;
-    // res.cookie('steamID',steamid); //Might need this?
-    res.json(resp);
+        resp.sessionid = session.id;
+        res.json(resp);
+    }
 });
 
 app.use('/payments',bodyParser.json());
 app.post('/payments',(req,res) => {
-    console.log(req.body);
+    let intent = ''
+    try {
+        intent = req.body.data.object;
+        if (req.body.type == 'payment_intent.succeeded') {
+            const steamid = intent.metadata.steamID;
+            VIPCustomer.create({vipsteamID:steamid,purchasedate:Date.now()}).catch(err => {
+                //BIG ERROR WITH CREATING ENTRY. Notify me somehow?
+                console.log(`Error with creating VIPCustomer with ID:${steamid}`);
+            });
+        }
+    } catch {
+        console.log(`Bad request sent to payments?! From ${req.ip}`);
+    }
     res.status(200).end();
 });
 
