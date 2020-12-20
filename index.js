@@ -1,6 +1,5 @@
 const firebase = require('firebase/app');
 // require('firebase/firestore'); //I dont think we'll need this atm
-process.env.mongopass = 'thedojo123';
 
 const firebaseConfig = {
     apiKey: "AIzaSyAriMlY99iSs-gG3hHYnU7Kb1ogj3i2THg",
