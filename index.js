@@ -39,7 +39,8 @@ const GiveawayEntrantSchema = new mongoose.Schema({
 
 const VIPCustomerSchema = new mongoose.Schema({
     vipsteamID: String,
-    purchasedate: Date
+    purchasedate: Date,
+    paymentIntent: String
 });
 
 const BIPlayer = mongoose.model('BIPlayer',BIPlayerSchema);
@@ -97,7 +98,7 @@ app.post('/payments',(req,res) => {
         intent = req.body.data.object;
         if (req.body.type == 'payment_intent.succeeded') {
             const steamid = intent.metadata.steamID;
-            VIPCustomer.create({vipsteamID:steamid,purchasedate:Date.now()}).catch(err => {
+            VIPCustomer.create({vipsteamID:steamid,purchasedate:Date.now(),paymentIntent:intent.id}).catch(err => {
                 //BIG ERROR WITH CREATING ENTRY. Notify me somehow?
                 console.log(`Error with creating VIPCustomer with ID:${steamid}`);
             });
