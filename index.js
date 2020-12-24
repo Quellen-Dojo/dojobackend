@@ -76,7 +76,7 @@ app.post('/buyvip',async (req,res) => {
             cancel_url: 'https://epic-elion-b92a4f.netlify.app/store.html',
             success_url: 'https://epic-elion-b92a4f.netlify.app/sitemessage.html?size=3&color=ffffff&msg=Thank%20you%20for%20your%20purchase!',
             line_items: [
-                {price:'price_1HzrNCDDUm17J8yEXQ1wyZEf',quantity:1}
+                {price:'price_1I1zooDDUm17J8yEy8B4icJJ',quantity:1}
             ],
             payment_intent_data: {
                 metadata: {steamID:steamid,type:'vip'}
