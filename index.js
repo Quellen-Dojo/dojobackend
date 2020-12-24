@@ -4,7 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const discordOauth2 = require('discord-oauth2');
-const stripe = require('stripe')('sk_test_51Hzr5iDDUm17J8yEQMImwpS2DnG7V77sWoZzTeFM4iCEcTSQxwzMDzBIUk8ZFhKYJoww85AWxRS3BPWCKnW54DFB00OawqqLQ3');
+const stripe = require('stripe')(process.env.stripeSK);
 const https = require('https');
 
 const app = express();
