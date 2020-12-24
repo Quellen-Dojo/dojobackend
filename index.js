@@ -1,33 +1,21 @@
-const firebase = require('firebase/app');
 // require('firebase/firestore'); //I dont think we'll need this atm
-
-const firebaseConfig = {
-    apiKey: "AIzaSyAriMlY99iSs-gG3hHYnU7Kb1ogj3i2THg",
-    authDomain: "dojobackend-a8b59.firebaseapp.com",
-    projectId: "dojobackend-a8b59",
-    storageBucket: "dojobackend-a8b59.appspot.com",
-    messagingSenderId: "297942814237",
-    appId: "1:297942814237:web:1ca2dd612c29e23a3540f4",
-    measurementId: "G-GG8PNZ82FS"
-  };
-
-firebase.initializeApp(firebaseConfig);
-
 const mongoose = require('mongoose');
 const express = require('express');
-const app = express();
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const discordOauth2 = require('discord-oauth2');
-const oauth = new discordOauth2();
 const stripe = require('stripe')('sk_test_51Hzr5iDDUm17J8yEQMImwpS2DnG7V77sWoZzTeFM4iCEcTSQxwzMDzBIUk8ZFhKYJoww85AWxRS3BPWCKnW54DFB00OawqqLQ3');
+const https = require('https');
+
+const app = express();
+const oauth = new discordOauth2();
 
 app.use(cors());
 
-mongoose.connect('mongodb+srv://quellen:'+process.env.mongopass+'@cluster0.jxtal.mongodb.net/dojodb?retryWrites=true&w=majority',{useNewUrlParser:true,useUnifiedTopology:true})
-let port = process.env.PORT || 3000;
+process.env.mongopass = 'thedojo123';
+mongoose.connect('mongodb+srv://quellen:'+process.env.mongopass+'@cluster0.jxtal.mongodb.net/dojodb?retryWrites=true&w=majority',{useNewUrlParser:true,useUnifiedTopology:true});
 
-//Models
+//Schemas
 const BIPlayerSchema = new mongoose.Schema({
     discordUsername: String,
     steamID: String
@@ -43,31 +31,41 @@ const VIPCustomerSchema = new mongoose.Schema({
     paymentIntent: String
 });
 
+//Models
 const BIPlayer = mongoose.model('BIPlayer',BIPlayerSchema);
 const GiveawayEntrant = mongoose.model('GiveawayEntrant',GiveawayEntrantSchema);
 const VIPCustomer = mongoose.model('VIPCustomer',VIPCustomerSchema);
 
-// app.get('/test',(req,res) => {
-//     const {user,id} = req.query;
-//     const newPlayer = BIPlayer.create({discordUsername:user,steamID:id}).catch(e => {
-//         res.status(500).send('Server Error');
-//     });
-//     res.send('Done!');
-// });
+async function sendToDiscord(message) {
+    const sendWebhook = https.request('https://discord.com/api/webhooks/784141542062293032/5mMbpG03t1sGMRfy2i-drGjFpkXUzJ6pNW_HpAv1g_e97Xt-RoLZjUxGAW46D6QDFx_A',{
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
 
-app.get('/five',(req,res) => {
-    res.status(500).end();
+    sendWebhook.write(JSON.stringify({content:message,avatar_url:'https://sbp-plugin-images.s3.eu-west-1.amazonaws.com/technologies1905_5eb57bd25635d_icon.jpg'}));
+    sendWebhook.end();
+}
+
+app.get('/goodvip', async (req,res) => {
+    const {id} = req.query;
+    await sendToDiscord('VIP 76561198062410649');
+    res.status(200).send();
 });
 
 app.use('/buyvip',bodyParser.json());
 app.post('/buyvip',async (req,res) => {
-    let resp = {exists:false,sessionid:''}
+    let resp = {exists:false,sessionid:''};
     let steamid = req.body['steamid'];
-    if (!steamid) { res.status(500).send(); return; }
-    await VIPCustomer.findOne({vipsteamID:steamid},(e,d) => {
-        if (d !== null) {
+    
+    if (!steamid) {res.status(500).send(); return;}
+
+    await VIPCustomer.findOne({vipsteamID:steamid},(error,data) => {
+        if (data != null) {
             resp.exists = true;
             res.json(resp).send();
+            return;
         }
     });
 
@@ -82,13 +80,37 @@ app.post('/buyvip',async (req,res) => {
                 {price:'price_1HzrNCDDUm17J8yEXQ1wyZEf',quantity:1}
             ],
             payment_intent_data: {
-                metadata: {steamID:steamid}
+                metadata: {steamID:steamid,type:'vip'}
             }
-        })
+        });
 
         resp.sessionid = session.id;
         res.json(resp);
     }
+});
+
+app.use('/buycoins',bodyParser.json());
+app.post('/buycoins',async (req,res) => {
+    let {steamid,quantity,priceString} = req.body;
+    quantity = parseInt(quantity);
+    if (!steamid || !quantity) {res.status(500).send(); return;}
+
+    //Just in case some nucance posts me a non-int quantity
+
+    const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        mode: 'payment',
+        cancel_url: 'https://epic-elion-b92a4f.netlify.app/store.html',
+        success_url: 'https://epic-elion-b92a4f.netlify.app/sitemessage.html?size=3&color=ffffff&msg=Thank%20you%20for%20your%20purchase!',
+        line_items: [
+            {price:priceString,quantity:quantity}
+        ],
+        payment_intent_data: {
+            metadata: {steamID:steamid,type:'coins',quant:quantity}
+        }
+    });
+
+    res.json({sessionid:session.id});
 });
 
 app.use('/payments',bodyParser.json());
@@ -98,10 +120,18 @@ app.post('/payments',(req,res) => {
         intent = req.body.data.object;
         if (req.body.type == 'payment_intent.succeeded') {
             const steamid = intent.metadata.steamID;
-            VIPCustomer.create({vipsteamID:steamid,purchasedate:Date.now(),paymentIntent:intent.id}).catch(err => {
-                //BIG ERROR WITH CREATING ENTRY. Notify me somehow?
-                console.log(`Error with creating VIPCustomer with ID:${steamid}`);
-            });
+            switch(intent.metadata.type) {
+                case 'vip':
+                    VIPCustomer.create({vipsteamID:steamid,purchasedate:Date.now(),paymentIntent:intent.id}).catch(err => {
+                        //BIG ERROR WITH CREATING ENTRY. Notify me somehow?
+                        console.log(`Error with creating VIPCustomer with ID:${steamid}`);
+                    }).then((doc) => {
+                        sendToDiscord(`VIP ${steamid}`);
+                    });
+                case 'coins':
+                    //MAKE Stuff to give coins on the dojo! NOW!!
+                    sendToDiscord(`COINS ${steamid} ${intent.metadata.quant}`);
+            }
         }
     } catch {
         console.log(`Bad request sent to payments?! From ${req.ip}`);
@@ -175,6 +205,8 @@ app.get('/sign',(req,res) => {
         res.status(500).send();
     });
 });
+
+let port = process.env.PORT || 3000;
 
 app.listen(port,() => {
     console.log('App listening');
