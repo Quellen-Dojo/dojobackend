@@ -12,7 +12,6 @@ const oauth = new discordOauth2();
 
 app.use(cors());
 
-process.env.mongopass = 'thedojo123';
 mongoose.connect('mongodb+srv://quellen:'+process.env.mongopass+'@cluster0.jxtal.mongodb.net/dojodb?retryWrites=true&w=majority',{useNewUrlParser:true,useUnifiedTopology:true});
 
 //Schemas
