@@ -6,6 +6,7 @@ const bodyParser = require('body-parser');
 const discordOauth2 = require('discord-oauth2');
 const stripe = require('stripe')(process.env.stripeSK);
 const https = require('https');
+require('dotenv').config();
 
 const app = express();
 const oauth = new discordOauth2();
