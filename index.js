@@ -54,6 +54,13 @@ app.get('/goodvip', async (req,res) => {
     res.status(200).send();
 });
 
+app.get('/getsignups',async (req,res) => {
+    let theList = {};
+    await BIPlayer.find({}).then(fullList => {
+        res.json(fullList);
+    });
+});
+
 app.use('/buyvip',bodyParser.json());
 app.post('/buyvip',async (req,res) => {
     let resp = {exists:false,sessionid:''};
