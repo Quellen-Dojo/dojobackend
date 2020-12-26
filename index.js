@@ -79,10 +79,10 @@ app.post('/buyvip',async (req,res) => {
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
             mode: 'payment',
-            cancel_url: 'https://dojogaming.us/store.html',
-            success_url: 'https://dojogaming.us/sitemessage.html?size=3&color=ffffff&msg=Thank%20you%20for%20your%20purchase!',
+            cancel_url: process.env.stripeCancel,
+            success_url: process.env.stripeSuccess,
             line_items: [
-                {price:'price_1I1zooDDUm17J8yEy8B4icJJ',quantity:1}
+                {price:process.env.stripeVIP,quantity:1}
             ],
             payment_intent_data: {
                 metadata: {steamID:steamid,type:'vip'}
@@ -96,7 +96,7 @@ app.post('/buyvip',async (req,res) => {
 
 app.use('/buycoins',bodyParser.json());
 app.post('/buycoins',async (req,res) => {
-    let {steamid,quantity,priceString} = req.body;
+    let {steamid,quantity} = req.body;
     quantity = parseInt(quantity);
     if (!steamid || !quantity) {res.status(500).send(); return;}
 
@@ -105,10 +105,10 @@ app.post('/buycoins',async (req,res) => {
     const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         mode: 'payment',
-        cancel_url: 'https://dojogaming.us/store.html',
-        success_url: 'https://dojogaming.us/sitemessage.html?size=3&color=ffffff&msg=Thank%20you%20for%20your%20purchase!',
+        cancel_url: process.env.stripeCancel,
+        success_url: process.env.stripeSuccess,
         line_items: [
-            {price:priceString,quantity:quantity}
+            {price:process.env.price1000,quantity:quantity}
         ],
         payment_intent_data: {
             metadata: {steamID:steamid,type:'coins',quant:quantity}
