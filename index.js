@@ -37,7 +37,7 @@ const GiveawayEntrant = mongoose.model('GiveawayEntrant',GiveawayEntrantSchema);
 const VIPCustomer = mongoose.model('VIPCustomer',VIPCustomerSchema);
 
 async function sendToDiscord(message) {
-    const sendWebhook = https.request('https://discord.com/api/webhooks/784141542062293032/5mMbpG03t1sGMRfy2i-drGjFpkXUzJ6pNW_HpAv1g_e97Xt-RoLZjUxGAW46D6QDFx_A',{
+    const sendWebhook = https.request(process.env.discordWebhook,{
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -54,6 +54,10 @@ async function sendToDiscord(message) {
 //         res.json(fullList);
 //     });
 // });
+
+app.get('/ping',(req,res) => {
+    res.send('Pong!');
+});
 
 app.use('/buyvip',bodyParser.json());
 app.post('/buyvip',async (req,res) => {
@@ -75,8 +79,8 @@ app.post('/buyvip',async (req,res) => {
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
             mode: 'payment',
-            cancel_url: 'https://epic-elion-b92a4f.netlify.app/store.html',
-            success_url: 'https://epic-elion-b92a4f.netlify.app/sitemessage.html?size=3&color=ffffff&msg=Thank%20you%20for%20your%20purchase!',
+            cancel_url: 'https://dojogaming.us/store.html',
+            success_url: 'https://dojogaming.us/sitemessage.html?size=3&color=ffffff&msg=Thank%20you%20for%20your%20purchase!',
             line_items: [
                 {price:'price_1I1zooDDUm17J8yEy8B4icJJ',quantity:1}
             ],
@@ -101,8 +105,8 @@ app.post('/buycoins',async (req,res) => {
     const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         mode: 'payment',
-        cancel_url: 'https://epic-elion-b92a4f.netlify.app/store.html',
-        success_url: 'https://epic-elion-b92a4f.netlify.app/sitemessage.html?size=3&color=ffffff&msg=Thank%20you%20for%20your%20purchase!',
+        cancel_url: 'https://dojogaming.us/store.html',
+        success_url: 'https://dojogaming.us/sitemessage.html?size=3&color=ffffff&msg=Thank%20you%20for%20your%20purchase!',
         line_items: [
             {price:priceString,quantity:quantity}
         ],
