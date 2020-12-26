@@ -1,4 +1,5 @@
 // require('firebase/firestore'); //I dont think we'll need this atm
+require('dotenv').config();
 const mongoose = require('mongoose');
 const express = require('express');
 const cors = require('cors');
@@ -6,7 +7,6 @@ const bodyParser = require('body-parser');
 const discordOauth2 = require('discord-oauth2');
 const stripe = require('stripe')(process.env.stripeSK);
 const https = require('https');
-require('dotenv').config();
 
 const app = express();
 const oauth = new discordOauth2();
@@ -108,7 +108,7 @@ app.post('/buycoins',async (req,res) => {
         cancel_url: process.env.stripeCancel,
         success_url: process.env.stripeSuccess,
         line_items: [
-            {price:process.env.price1000,quantity:quantity}
+            {price:process.env.stripe1000,quantity:quantity}
         ],
         payment_intent_data: {
             metadata: {steamID:steamid,type:'coins',quant:quantity}
