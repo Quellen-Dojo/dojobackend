@@ -22,7 +22,7 @@ const BIPlayerSchema = new mongoose.Schema({
 });
 
 const GiveawayEntrantSchema = new mongoose.Schema({
-    discord: String
+    discordUsername: String
 });
 
 const VIPCustomerSchema = new mongoose.Schema({
@@ -145,6 +145,34 @@ app.post('/payments',(req,res) => {
     res.status(200).end();
 });
 
+app.use('/giveaway',bodyParser.json());
+app.get('/giveaway', async (req,res) => {
+    const code = req.query['code'];
+    let jRes = {exists:false};
+    const data = {
+        clientId: '753807367484735568',
+        clientSecret: process.env.clientSecret,
+        grantType: 'authorization_code',
+        code: code,
+        redirectUri: process.env.redirectUri || 'http://127.0.0.1:5500/giveawaynext.html',
+        scope: 'identify'
+    };
+
+    
+    oauth.getUser((await oauth.tokenRequest(data)).access_token).then(user => {
+        let username = user.username+'#'+user.discriminator;
+        GiveawayEntrant.findOne({discordUsername:username},(err,dat) => {
+            if (dat == null) {
+                GiveawayEntrant.create({discordUsername:username}).then(() => {
+                    res.json({exists:false}).send()
+                });
+            } else {
+                res.json({exists:true}).send()
+            }
+        });
+    });
+});
+
 app.get('/sign',(req,res) => {
     const code = req.query['code'];
     console.log(`Sending code ${code} to discord...`);
@@ -195,7 +223,7 @@ app.get('/sign',(req,res) => {
                         res.json(jsonRes);
                     } else {
                         BIPlayer.create({discordUsername:userName,steamID:id}).then(() => {
-                            res.json(jsonRes);
+                            res.json(jsonRes).send();
                         }).catch(e => {
                             console.log('Error on creating BIPlayer?');
                             res.status(500).send();
@@ -215,5 +243,5 @@ app.get('/sign',(req,res) => {
 let port = process.env.PORT || 3000;
 
 app.listen(port,() => {
-    console.log('App listening');
+    console.log(`App listening on ${port}`);
 });
