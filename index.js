@@ -148,13 +148,12 @@ app.post('/payments',(req,res) => {
 app.use('/giveaway',bodyParser.json());
 app.get('/giveaway', async (req,res) => {
     const code = req.query['code'];
-    let jRes = {exists:false};
     const data = {
         clientId: '753807367484735568',
         clientSecret: process.env.clientSecret,
         grantType: 'authorization_code',
         code: code,
-        redirectUri: process.env.redirectUri || 'http://127.0.0.1:5500/giveawaynext.html',
+        redirectUri: process.env.giveawayRedirectUri || 'http://127.0.0.1:5500/giveawaynext.html',
         scope: 'identify'
     };
 
