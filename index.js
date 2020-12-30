@@ -229,7 +229,7 @@ app.get('/giveaway', async (req,res) => {
 app.get('/sign',async (req,res) => {
     const code = req.query['code'];
     const state = await getGameStates();
-    if (code && state['BI']) {
+    if (code && state['baseInvadersActive']) {
         const data = {
             clientId: '753807367484735568',
             clientSecret: process.env.clientSecret,
