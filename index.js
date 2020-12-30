@@ -47,7 +47,7 @@ const GameState = mongoose.model('GameState',GameStatesSchema);
 const theStateId = '5fec3262c936d15a08ae0269';
 
 
-async function getGameState() {
+async function getGameStates() {
     let cState = await GameState.findById(theStateId).exec();
     return cState;
 }
@@ -78,8 +78,47 @@ app.get('/ping',async (req,res) => {
 });
 
 app.get('/states',async (req,res) => {
-    let state = await getGameState();
+    let state = await getGameStates();
     res.json({BI:state.baseInvadersActive,GA:state.giveawaysActive});
+});
+
+app.post('/setStates',async (req,res) => {
+    const GA = req.body['GA'];
+    const BI = req.body['BI'];
+    const key = req.body['key']
+    if ((GA == undefined && BI == undefined) || key == undefined) {
+        res.status(500).send();
+        return;
+    }
+    if(key == process.env.stateEditKey) {
+        if ('GA' in req.body) {
+            GameState.findByIdAndUpdate(theStateId,{giveawaysActive:GA},{useFindAndModify:false},(err,data) => {
+                if (!err) {
+                    res.status(200);
+                } else {
+                    res.status(500);
+                }
+            });
+            if (res.statusCode == 500) {
+                res.send();
+                return;
+            }
+        }
+        if ('BI' in req.body) {
+            GameState.findByIdAndUpdate(theStateId,{baseInvadersActive:BI},{useFindAndModify:false},(err,data) => {
+                if (!err) {
+                    res.status(200);
+                } else {
+                    res.status(500);
+                }
+            });
+        }
+        res.send();
+        return;
+    } else {
+        res.status(500).send();
+        return;
+    }
 });
 
 app.post('/buyvip',async (req,res) => {
@@ -167,95 +206,103 @@ app.post('/payments',(req,res) => {
 
 app.get('/giveaway', async (req,res) => {
     const code = req.query['code'];
-    const data = {
-        clientId: '753807367484735568',
-        clientSecret: process.env.clientSecret,
-        grantType: 'authorization_code',
-        code: code,
-        redirectUri: process.env.giveawayRedirectUri || 'http://127.0.0.1:5500/giveawaynext.html',
-        scope: 'identify'
-    };
+    const state = await getGameStates();
+    if(code && state['GA']) {
+        const data = {
+            clientId: '753807367484735568',
+            clientSecret: process.env.clientSecret,
+            grantType: 'authorization_code',
+            code: code,
+            redirectUri: process.env.giveawayRedirectUri || 'http://127.0.0.1:5500/giveawaynext.html',
+            scope: 'identify'
+        };
 
-    
-    oauth.getUser((await oauth.tokenRequest(data)).access_token).then(user => {
-        let username = user.username+'#'+user.discriminator;
-        GiveawayEntrant.findOne({discordUsername:username},(err,dat) => {
-            if (dat == null) {
-                GiveawayEntrant.create({discordUsername:username}).then(() => {
-                    res.json({exists:false}).send()
-                });
-            } else {
-                res.json({exists:true}).send()
-            }
+        
+        oauth.getUser((await oauth.tokenRequest(data)).access_token).then(user => {
+            let username = user.username+'#'+user.discriminator;
+            GiveawayEntrant.findOne({discordUsername:username},(err,dat) => {
+                if (dat == null) {
+                    GiveawayEntrant.create({discordUsername:username}).then(() => {
+                        res.json({exists:false}).send()
+                    });
+                } else {
+                    res.json({exists:true}).send()
+                }
+            });
         });
-    });
+    } else {
+        res.status(500).send();
+    }
 });
 
-app.get('/sign',(req,res) => {
+app.get('/sign',async (req,res) => {
     const code = req.query['code'];
-    console.log(`Sending code ${code} to discord...`);
-    //First discord request
-    const data = {
-        clientId: '753807367484735568',
-        clientSecret: process.env.clientSecret,
-        grantType: 'authorization_code',
-        code: code,
-        redirectUri: process.env.redirectUri || 'http://127.0.0.1:5500/signupnext.html',
-        scope: 'connections identify'
-    };
+    const state = await getGameStates();
+    if (code && state['BI']) {
+        const data = {
+            clientId: '753807367484735568',
+            clientSecret: process.env.clientSecret,
+            grantType: 'authorization_code',
+            code: code,
+            redirectUri: process.env.redirectUri || 'http://127.0.0.1:5500/signupnext.html',
+            scope: 'connections identify'
+        };
 
-    let userName = '';
-    let id = '';
-    let jsonRes = {
-        got_code: false,
-        has_discord: false,
-        has_steam: false,
-        already_exists: false
-    }
+        let userName = '';
+        let id = '';
+        let jsonRes = {
+            got_code: false,
+            has_discord: false,
+            has_steam: false,
+            already_exists: false
+        }
 
-    oauth.tokenRequest(data).then(res1 => {
-        jsonRes.got_code = true;
-        oauth.getUser(res1.access_token).then(res2 => {
-            userName = res2.username+'#'+res2.discriminator;
-            jsonRes.has_discord = true;
-            oauth.getUserConnections(res1.access_token).then(res3 => {
-                for (const conn of res3) {
-                    if (conn.type == 'steam') {
-                        id = conn.id;
-                        jsonRes.has_steam = true;
-                        break;
+        oauth.tokenRequest(data).then(res1 => {
+            jsonRes.got_code = true;
+            oauth.getUser(res1.access_token).then(res2 => {
+                userName = res2.username+'#'+res2.discriminator;
+                jsonRes.has_discord = true;
+                oauth.getUserConnections(res1.access_token).then(res3 => {
+                    for (const conn of res3) {
+                        if (conn.type == 'steam') {
+                            id = conn.id;
+                            jsonRes.has_steam = true;
+                            break;
+                        }
                     }
-                }
 
-                //No Steam connection
-                if (id === '') {
-                    res.json(jsonRes);
-                    return;
-                }
-
-                //Check for existing player and add:
-                //d will have _doc which contains _id and the fields discordUsername and steamID
-                BIPlayer.findOne({steamID:id},(err,d) => {
-                    if (d !== null) {
-                        jsonRes.already_exists = true;
+                    //No Steam connection
+                    if (id === '') {
                         res.json(jsonRes);
-                    } else {
-                        BIPlayer.create({discordUsername:userName,steamID:id}).then(() => {
-                            res.json(jsonRes).send();
-                        }).catch(e => {
-                            console.log('Error on creating BIPlayer?');
-                            res.status(500).send();
-                        });
+                        return;
                     }
+
+                    //Check for existing player and add:
+                    //d will have _doc which contains _id and the fields discordUsername and steamID
+                    BIPlayer.findOne({steamID:id},(err,d) => {
+                        if (d !== null) {
+                            jsonRes.already_exists = true;
+                            res.json(jsonRes);
+                        } else {
+                            BIPlayer.create({discordUsername:userName,steamID:id}).then(() => {
+                                res.json(jsonRes).send();
+                            }).catch(e => {
+                                console.log('Error on creating BIPlayer?');
+                                res.status(500).send();
+                            });
+                        }
+                        
+                    });
                     
-                });
-                
-            }).catch(() => res.status(500).send())
-        }).catch(() => res.status(500).send());
-    }).catch(() => {
-        console.log('Error from Discord...');
+                }).catch(() => res.status(500).send())
+            }).catch(() => res.status(500).send());
+        }).catch(() => {
+            console.log('Error from Discord...');
+            res.status(500).send();
+        });
+    } else {
         res.status(500).send();
-    });
+    }
 });
 
 let port = process.env.PORT || 3000;
