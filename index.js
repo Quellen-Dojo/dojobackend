@@ -198,7 +198,7 @@ app.post('/payments',(req,res) => {
 app.get('/giveaway', async (req,res) => {
     const code = req.query['code'];
     const state = await getGameStates();
-    if(code && state['GA']) {
+    if(code && state['giveawaysActive']) {
         const data = {
             clientId: '753807367484735568',
             clientSecret: process.env.clientSecret,
