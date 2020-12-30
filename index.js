@@ -7,11 +7,13 @@ const bodyParser = require('body-parser');
 const discordOauth2 = require('discord-oauth2');
 const stripe = require('stripe')(process.env.stripeSK);
 const https = require('https');
+const getSchemaTypes = require('mongoose/lib/helpers/populate/getSchemaTypes');
 
 const app = express();
 const oauth = new discordOauth2();
 
 app.use(cors());
+app.use(bodyParser.json());
 
 mongoose.connect('mongodb+srv://quellen:'+process.env.mongopass+'@cluster0.jxtal.mongodb.net/dojodb?retryWrites=true&w=majority',{useNewUrlParser:true,useUnifiedTopology:true});
 
@@ -31,10 +33,24 @@ const VIPCustomerSchema = new mongoose.Schema({
     paymentIntent: String
 });
 
+const GameStatesSchema = new mongoose.Schema({
+    giveawaysActive: Boolean,
+    baseInvadersActive: Boolean
+});
+
 //Models
 const BIPlayer = mongoose.model('BIPlayer',BIPlayerSchema);
 const GiveawayEntrant = mongoose.model('GiveawayEntrant',GiveawayEntrantSchema);
 const VIPCustomer = mongoose.model('VIPCustomer',VIPCustomerSchema);
+const GameState = mongoose.model('GameState',GameStatesSchema);
+
+const theStateId = '5fec3262c936d15a08ae0269';
+
+
+async function getGameState() {
+    let cState = await GameState.findById(theStateId).exec();
+    return cState;
+}
 
 async function sendToDiscord(message) {
     const sendWebhook = https.request(process.env.discordWebhook,{
@@ -55,11 +71,17 @@ async function sendToDiscord(message) {
 //     });
 // });
 
-app.get('/ping',(req,res) => {
+// {"_id":{"$oid":"5fec3262c936d15a08ae0269"},"giveawaysActive":true,"baseInvadersActive":true,"__v":{"$numberInt":"0"}}
+
+app.get('/ping',async (req,res) => {
     res.send('Pong!');
 });
 
-app.use('/buyvip',bodyParser.json());
+app.get('/states',async (req,res) => {
+    let state = await getGameState();
+    res.json({BI:state.baseInvadersActive,GA:state.giveawaysActive});
+});
+
 app.post('/buyvip',async (req,res) => {
     let resp = {exists:false,sessionid:''};
     let steamid = req.body['steamid'];
@@ -94,7 +116,6 @@ app.post('/buyvip',async (req,res) => {
     }
 });
 
-app.use('/buycoins',bodyParser.json());
 app.post('/buycoins',async (req,res) => {
     let {steamid,quantity} = req.body;
     quantity = parseInt(quantity);
@@ -118,7 +139,6 @@ app.post('/buycoins',async (req,res) => {
     res.json({sessionid:session.id});
 });
 
-app.use('/payments',bodyParser.json());
 app.post('/payments',(req,res) => {
     let intent = ''
     try {
@@ -145,7 +165,6 @@ app.post('/payments',(req,res) => {
     res.status(200).end();
 });
 
-app.use('/giveaway',bodyParser.json());
 app.get('/giveaway', async (req,res) => {
     const code = req.query['code'];
     const data = {
