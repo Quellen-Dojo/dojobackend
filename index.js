@@ -64,15 +64,6 @@ async function sendToDiscord(message) {
     sendWebhook.end();
 }
 
-// app.get('/getsignups',async (req,res) => {
-//     let theList = {};
-//     await BIPlayer.find({}).then(fullList => {
-//         res.json(fullList);
-//     });
-// });
-
-// {"_id":{"$oid":"5fec3262c936d15a08ae0269"},"giveawaysActive":true,"baseInvadersActive":true,"__v":{"$numberInt":"0"}}
-
 app.get('/ping',async (req,res) => {
     res.send('Pong!');
 });
@@ -85,7 +76,7 @@ app.get('/states',async (req,res) => {
 app.post('/setStates',async (req,res) => {
     const GA = req.body['GA'];
     const BI = req.body['BI'];
-    const key = req.body['key']
+    const key = req.body['key'];
     if ((GA == undefined && BI == undefined) || key == undefined) {
         res.status(500).send();
         return;
