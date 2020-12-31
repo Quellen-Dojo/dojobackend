@@ -68,15 +68,67 @@ app.get('/ping',async (req,res) => {
     res.send('Pong!');
 });
 
+app.get('/biplayers',async (req,res) => {
+    const key = req.query['key'];
+    if (key != process.env.stateEditKey) {res.status(500).send(); return;}
+    const biplayers = {};
+    const allBIDocs = await BIPlayer.find((err,data) => {
+        if(!err){
+            data.map(v => biplayers[v.discordUsername] = v.steamID);
+        } else {
+            console.log('Error retrieving all BIPlayers');
+        }
+    });
+    res.json(biplayers).send();
+});
+
+app.get('/gaentries',async (req,res) => {
+    const key = req.query['key'];
+    if (key != process.env.stateEditKey) {res.status(500).send(); return;}
+    const gaentrants = [];
+    const allBIDocs = await GiveawayEntrant.find((err,data) => {
+        if(!err){
+            data.map(v => gaentrants.push(v.discordUsername));
+        } else {
+            console.log('Error retrieving all GiveawayEntrants');
+        }
+    });
+    res.json(gaentrants).send();
+});
+
+app.post('/clearBI',async (req,res) => {
+    const key = req.body['key'];
+    if (key != process.env.stateEditKey) { res.status(500).send(); return;}
+    await BIPlayer.deleteMany({},(err) => {
+        if (err) {
+            console.log(err);
+            res.status(500).send();
+        } else {
+            res.status(200).send();
+        }
+    });
+});
+
+app.post('/clearGA',async (req,res) => {
+    const key = req.body['key'];
+    if (key != process.env.stateEditKey) { res.status(500).send(); return;}
+    await GiveawayEntrant.deleteMany({},(err) => {
+        if (err) {
+            console.log(err);
+            res.status(500).send();
+        } else {
+            res.status(200).send();
+        }
+    });
+});
+
 app.get('/states',async (req,res) => {
     let state = await getGameStates();
     res.json({BI:state.baseInvadersActive,GA:state.giveawaysActive});
 });
 
 app.post('/setStates',async (req,res) => {
-    const GA = req.body['GA'];
-    const BI = req.body['BI'];
-    const key = req.body['key'];
+    const {GA, BI, key} = req.body;
     if ((GA == undefined && BI == undefined) || key == undefined) {
         res.status(500).send();
         return;
