@@ -237,7 +237,6 @@ app.post('/payments',(req,res) => {
                     });
                     break;
                 case 'coins':
-                    //MAKE Stuff to give coins on the dojo! NOW!!
                     sendToDiscord(`COINS ${steamid} ${intent.metadata.quant}`);
             }
         }
