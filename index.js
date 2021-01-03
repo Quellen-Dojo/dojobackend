@@ -7,7 +7,20 @@ const bodyParser = require('body-parser');
 const discordOauth2 = require('discord-oauth2');
 const stripe = require('stripe')(process.env.stripeSK);
 const https = require('https');
-const getSchemaTypes = require('mongoose/lib/helpers/populate/getSchemaTypes');
+const nodemailer = require('nodemailer');
+
+var transport = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
+    auth: {
+        user: "thedojodiscord@gmail.com",
+        pass: process.env.emailPass
+    },
+    tls: {
+        rejectUnauthorized: false
+    }
+});
 
 const app = express();
 const oauth = new discordOauth2();
@@ -227,6 +240,23 @@ app.post('/payments',(req,res) => {
         intent = req.body.data.object;
         if (req.body.type == 'payment_intent.succeeded') {
             const steamid = intent.metadata.steamID;
+            const receipt = intent.charges.data[0].receipt_url;
+            const email = intent.charges.data[0].billing_details.email;
+            const cust_name = intent.charges.data[0].billing_details.name;
+            const receipt_message = {
+                from: 'thedojodiscord@gmail.com',
+                to: email,
+                subject: 'The Dojo (RECEIPT): Thank you for your purchase!',
+                text: `Thank you for purchasing from The Dojo\'s online store, ${cust_name}! \n\nYour receipt can be found here:\n${receipt}`
+            }
+            transport.sendMail(receipt_message, (err, info) => {
+                if (err) {
+                    sendToDiscord('Error sending receipt email! ' + err);
+                    // console.log('Error with email send: '+ err);
+                } else {
+                    console.log(info);
+                }
+            });
             switch(intent.metadata.type) {
                 case 'vip':
                     VIPCustomer.create({vipsteamID:steamid,purchasedate:Date.now(),paymentIntent:intent.id}).catch(err => {
@@ -237,11 +267,13 @@ app.post('/payments',(req,res) => {
                     });
                     break;
                 case 'coins':
+                    // console.log('Coins succeeded');
                     sendToDiscord(`COINS ${steamid} ${intent.metadata.quant}`);
             }
         }
-    } catch {
+    } catch(err) {
         console.log(`Bad request sent to payments?! From ${req.ip}`);
+        console.log(err);
     }
     res.status(200).end();
 });

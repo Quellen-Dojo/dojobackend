@@ -20,6 +20,7 @@
     "firebase": "^8.2.0",
     "https": "^1.0.0",
     "mongoose": "^5.11.8",
+    "nodemailer": "^6.4.17",
     "stripe": "^8.129.0"
   }
 }
