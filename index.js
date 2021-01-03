@@ -247,7 +247,11 @@ app.post('/payments',(req,res) => {
                 from: 'thedojodiscord@gmail.com',
                 to: email,
                 subject: 'The Dojo (RECEIPT): Thank you for your purchase!',
-                text: `Thank you for purchasing from The Dojo\'s online store, ${cust_name}! \n\nYour receipt can be found here:\n${receipt}`
+            }
+            if (steamid) {
+                receipt_message.text = `Thank you for purchasing from The Dojo\'s online store, ${cust_name}!\nThe steam account receiving your item(s) can be found here: https://steamid.io/lookup/${steamid}\n\nYour receipt can be found here:\n${receipt}`;
+            } else {
+                receipt_message.text = `Thank you for purchasing from The Dojo\'s online store, ${cust_name}!\n\nYour receipt can be found here:\n${receipt}`;
             }
             transport.sendMail(receipt_message, (err, info) => {
                 if (err) {
