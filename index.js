@@ -282,10 +282,10 @@ app.post('/payments',(req,res) => {
     res.status(200).end();
 });
 
-app.get('/giveaway', async (req,res) => {
+app.get('/giveaway', async (req, res) => {
     const code = req.query['code'];
     const state = await getGameStates();
-    if(code && state['giveawaysActive']) {
+    if (code && state['giveawaysActive']) {
         const data = {
             clientId: '753807367484735568',
             clientSecret: process.env.clientSecret,
@@ -296,18 +296,20 @@ app.get('/giveaway', async (req,res) => {
         };
 
         
-        oauth.getUser((await oauth.tokenRequest(data)).access_token).catch(err => { 
-            console.log(`Error from oauth.getUser(): ${err}`);
-        }).then(user => {
-            let username = user.username+'#'+user.discriminator;
-            GiveawayEntrant.findOne({discordUsername:username},(err,dat) => {
-                if (dat == null) {
-                    GiveawayEntrant.create({discordUsername:username}).then(() => {
-                        res.json({exists:false}).send()
-                    });
-                } else {
-                    res.json({exists:true}).send()
-                }
+        oauth.tokenRequest(data).catch(e1 => console.log(`Error on oauth.tokenRequrest(): ${e1}`)).then(tres => {
+            oauth.getUser(tres.access_token).catch(err => {
+                console.log(`Error from oauth.getUser(): ${err}`);
+            }).then(user => {
+                let username = user.username + '#' + user.discriminator;
+                GiveawayEntrant.findOne({ discordUsername: username }, (err, dat) => {
+                    if (dat == null) {
+                        GiveawayEntrant.create({ discordUsername: username }).then(() => {
+                            res.json({ exists: false }).send()
+                        });
+                    } else {
+                        res.json({ exists: true }).send()
+                    }
+                });
             });
         });
     } else {
