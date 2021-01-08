@@ -296,7 +296,9 @@ app.get('/giveaway', async (req,res) => {
         };
 
         
-        oauth.getUser((await oauth.tokenRequest(data)).access_token).then(user => {
+        oauth.getUser((await oauth.tokenRequest(data)).access_token).catch(err => { 
+            console.log(`Error from oauth.getUser(): ${err}`);
+        }).then(user => {
             let username = user.username+'#'+user.discriminator;
             GiveawayEntrant.findOne({discordUsername:username},(err,dat) => {
                 if (dat == null) {
