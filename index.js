@@ -23,7 +23,7 @@ var transport = nodemailer.createTransport({
 });
 
 const app = express();
-const oauth = new discordOauth2();
+const oauth = new discordOauth2({requestTimeout:2000});
 
 app.use(cors());
 app.use(bodyParser.json());
