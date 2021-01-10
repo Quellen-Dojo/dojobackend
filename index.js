@@ -23,7 +23,7 @@ var transport = nodemailer.createTransport({
 });
 
 const app = express();
-const oauth = new discordOauth2({requestTimeout:4000});
+const oauth = new discordOauth2();
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -296,7 +296,7 @@ app.get('/giveaway', async (req, res) => {
         };
 
         
-        oauth.tokenRequest(data).catch(e1 => console.log(`Error on oauth.tokenRequrest(): ${e1}`)).then(tres => {
+        oauth.tokenRequest(data).catch(e1 => console.log(`Error on oauth.tokenRequrest(): ${e1}`)).then(async (tres) => {
             oauth.getUser(tres.access_token).catch(err => {
                 console.log(`Error from oauth.getUser(): ${err}`);
             }).then(user => {
