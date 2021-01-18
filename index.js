@@ -51,11 +51,18 @@ const GameStatesSchema = new mongoose.Schema({
     baseInvadersActive: Boolean
 });
 
+const StoreProductSchema = new mongoose.Schema({
+    prodObj: String,
+    name: String,
+    type: String
+});
+
 //Models
 const BIPlayer = mongoose.model('BIPlayer',BIPlayerSchema);
 const GiveawayEntrant = mongoose.model('GiveawayEntrant',GiveawayEntrantSchema);
 const VIPCustomer = mongoose.model('VIPCustomer',VIPCustomerSchema);
-const GameState = mongoose.model('GameState',GameStatesSchema);
+const GameState = mongoose.model('GameState', GameStatesSchema);
+const StoreProduct = mongoose.model('StoreProduct', StoreProductSchema);
 
 const theStateId = '5fec3262c936d15a08ae0269';
 
@@ -175,6 +182,10 @@ app.post('/setStates',async (req,res) => {
         res.status(500).send();
         return;
     }
+});
+
+app.get('/products', async (req, res) => { 
+
 });
 
 app.post('/buyvip',async (req,res) => {
